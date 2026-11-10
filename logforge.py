@@ -10,13 +10,12 @@ def parse_log_line(line: str) -> dict:
     clean_line = line.strip().replace("[INFO]", "").replace("[ERROR]", "")
     parts = clean_line.split(",")
 
-    # 2. 避免浮点数误差，使用 Decimal 解析金额[span_18](start_span)[span_18](end_span)
     user_id, ip, status_code, amount_str = (
-        parts[0],
-        parts[1],
-        int(parts[2]),
-        parts[3],
-    )
+    parts[0].strip(),
+    parts[1].strip(), 
+    int(parts[2]),
+    parts[3].strip(), 
+)
     amount = Decimal(amount_str)
 
     return {
