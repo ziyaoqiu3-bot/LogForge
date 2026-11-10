@@ -1,69 +1,61 @@
 """
-LogForge - Pure Python Log Parsing and Financial Reporting Tool
+LogForge Engine - Pure Python Data Analysis Pipeline
+Demonstrating Core Python Concepts: Mutability, Shared References, and Precision.
 """
+
 from decimal import Decimal
 
-def process_logs(log_filename, report_filename, error_log_filename):
-    category_totals = {}
-    user_transactions = {}
-    total_records = 0
-    valid_records = 0
 
-    with open(log_filename, 'r', encoding='utf-8') as f_in, \
-         open(error_log_filename, 'w', encoding='utf-8') as f_err:
+def parse_log_line(line: str) -> dict:
+    # 1. 利用字符串 replace 和 split 处理文本[span_17](start_span)[span_17](end_span)
+    clean_line = line.strip().replace("[INFO]", "").replace("[ERROR]", "")
+    parts = clean_line.split(",")
 
-        for line_idx, line in enumerate(f_in, start=1):
-            total_records += 1
-            line = line.strip()
+    # 2. 避免浮点数误差，使用 Decimal 解析金额[span_18](start_span)[span_18](end_span)
+    user_id, ip, status_code, amount_str = (
+        parts[0],
+        parts[1],
+        int(parts[2]),
+        parts[3],
+    )
+    amount = Decimal(amount_str)
 
-            if not line:
-                continue
+    return {
+        "user_id": user_id,
+        "ip": ip,
+        "status": status_code,
+        "amount": amount,
+    }
 
-            parts = line.split(',')
 
-            if len(parts) != 5:
-                print(f"[WARN] Line {line_idx} data format anomaly: {line}", file=f_err)
-                continue
+def process_dataset(raw_data: list) -> dict:
+    # 3. 数据防护：切断共享引用 (Shared Reference)，避免修改原列表[span_19](start_span)[span_19](end_span)
+    working_data = raw_data.copy()
 
-            timestamp, user_id, action, amount_str, status = parts
+    # 4. 元组：定义不可变的合法状态码白名单[span_20](start_span)[span_20](end_span)
+    VALID_STATUSES = (200, 201)
 
-            if status != 'SUCCESS':
-                print(f"[INFO] Line {line_idx} transaction unsuccessful (Status: {status}), skipped", file=f_err)
-                continue
+    # 5. 字典：聚合统计数据[span_21](start_span)[span_21](end_span)
+    stats = {"total_revenue": Decimal("0.00"), "user_count": 0, "ip_list": []}
 
-            amount = Decimal(amount_str)
-            valid_records += 1
+    for record in working_data:
+        if record["status"] in VALID_STATUSES:
+            stats["total_revenue"] += record["amount"]
+            stats["ip_list"].append(record["ip"])
 
-            category_totals[action] = category_totals.get(action, Decimal('0')) + amount
+    stats["user_count"] = len(stats["ip_list"])
+    return stats
 
-            if user_id not in user_transactions:
-                user_transactions[user_id] = []
-            user_transactions[user_id].append((timestamp, action, amount))
 
-    with open(report_filename, 'w', encoding='utf-8') as f_out:
-        f_out.write("=========================================\n")
-        f_out.write(" LogForge Financial Summary Report \n")
-        f_out.write("=========================================\n\n")
+# 测试运行
+if __name__ == "__main__":
+    sample_logs = [
+        "USER01,192.168.1.1,200,10.50",
+        "USER02,192.168.1.2,500,0.00",
+        "USER03,192.168.1.3,200,20.25",
+    ]
 
-        f_out.write("1. Transaction Totals by Category:\n")
-        f_out.write("%-15s %15s\n" % ("TX Type", "Total Amount"))
-        f_out.write("-" * 32 + "\n")
+    parsed_records = [parse_log_line(line) for line in sample_logs]
+    result = process_dataset(parsed_records)
 
-        for action, total in category_totals.items():
-            f_out.write("%-15s %15.2f\n" % (action, total))
-
-        f_out.write("\n2. User Transaction Details Summary:\n")
-        for user_id, records in user_transactions.items():
-            user_type = "VIP User" if len(records) >= 2 else "Regular User"
-            f_out.write(f"User: {user_id} [{user_type}]\n")
-
-            for timestamp, act, amt in records:
-                date_part = timestamp[:10]
-                f_out.write(" - [%s] %-10s %8.2f\n" % (date_part, act, amt))
-
-        f_out.write("\n" + "=" * 41 + "\n")
-        f_out.write("Total Records Read: %d, Valid Settlements: %d\n" % (total_records, valid_records))
-
-if __name__ == '__main__':
-    process_logs('raw_logs.txt', 'output_report.txt', 'error_logs.txt')
-    print("Analysis completed! Output files generated: output_report.txt and error_logs.txt")
+    print(f"总收入(精准计算): ${result['total_revenue']}")
