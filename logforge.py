@@ -7,7 +7,6 @@ from decimal import Decimal
 
 
 def parse_log_line(line: str) -> dict:
-    # 1. 利用字符串 replace 和 split 处理文本[span_17](start_span)[span_17](end_span)
     clean_line = line.strip().replace("[INFO]", "").replace("[ERROR]", "")
     parts = clean_line.split(",")
 
