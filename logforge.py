@@ -28,11 +28,9 @@ def parse_log_line(line: str) -> dict:
 
 def process_dataset(raw_data: list) -> dict:
     working_data = raw_data.copy()
-
-    # 4. 元组：定义不可变的合法状态码白名单[span_20](start_span)[span_20](end_span)
+    
     VALID_STATUSES = (200, 201)
 
-    # 5. 字典：聚合统计数据[span_21](start_span)[span_21](end_span)
     stats = {"total_revenue": Decimal("0.00"), "user_count": 0, "ip_list": []}
 
     for record in working_data:
