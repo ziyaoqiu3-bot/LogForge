@@ -27,7 +27,6 @@ def parse_log_line(line: str) -> dict:
 
 
 def process_dataset(raw_data: list) -> dict:
-    # 3. 数据防护：切断共享引用 (Shared Reference)，避免修改原列表[span_19](start_span)[span_19](end_span)
     working_data = raw_data.copy()
 
     # 4. 元组：定义不可变的合法状态码白名单[span_20](start_span)[span_20](end_span)
